@@ -12,6 +12,14 @@ Tested end to end with a stand-in agent (`python3 tests/test_pipeline.py`) and
 run against a real headless agent CLI (Warp's `oz agent run`). With a new agent,
 run `doctor` and `smoke` first.
 
+## Results: Oz on Warp's own fixes
+
+I ran Warp's Oz agent on 15 fixes merged into the open-source
+[warpdotdev/warp](https://github.com/warpdotdev/warp) repo, once with Haiku 4.5
+and once with Sonnet 5.5. Oz reported "done" in 30 of 30 runs. In 10 of them,
+the tests that shipped with Warp's real fix failed. Full write-up, with every
+failure read by hand: https://srikarchittemsetty.github.io/selfbench/
+
 ## Quick start
 
 ```bash

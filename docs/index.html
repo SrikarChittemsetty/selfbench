@@ -1,0 +1,162 @@
+<title>Oz on Warp's Own Fixes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one reading column; the evidence (cargo output, agent quotes) set apart as terminal-like blocks. */
+:root{
+  --bg:#f5f6f8; --surface:#ffffff; --ink:#151a22; --muted:#5a6475; --line:#dfe3ea;
+  --accent:#2f5bd3; --pass:#17794a; --pass-bg:#e2f3ea; --fail:#b42318; --fail-bg:#fde8e6;
+  --term-bg:#151a22; --term-ink:#d9dee8; --term-fail:#ff8a7a;
+  --display:"Bricolage Grotesque", "Avenir Next", "Segoe UI", sans-serif;
+  --body:"IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0f1319; --surface:#171c24; --ink:#e7ebf2; --muted:#9aa4b5; --line:#2a313d;
+  --accent:#8aa8ff; --pass:#5fd39a; --pass-bg:#143326; --fail:#ff8f80; --fail-bg:#3d1a17;
+  --term-bg:#0a0d12; --term-ink:#d9dee8; --term-fail:#ff8a7a; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0f1319; --surface:#171c24; --ink:#e7ebf2; --muted:#9aa4b5; --line:#2a313d;
+  --accent:#8aa8ff; --pass:#5fd39a; --pass-bg:#143326; --fail:#ff8f80; --fail-bg:#3d1a17;
+  --term-bg:#0a0d12; --term-ink:#d9dee8; --term-fail:#ff8a7a; color-scheme:dark }
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.6 var(--body);margin:0}
+.wrap{max-width:760px;margin:0 auto;padding-inline:20px;padding-block:48px 72px;display:grid;gap:56px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(30px,5vw,44px);font-weight:700;letter-spacing:-.01em}
+h2{font-size:24px;font-weight:600;margin-bottom:14px}
+h3{font-size:17px;font-weight:600}
+p{margin:0}
+a{color:var(--accent)} a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+code,.crate,pre{font-family:var(--mono)}
+code{font-size:.88em}
+.eyebrow{font:600 12px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+header.top{display:grid;gap:18px}
+.lede{font-size:21px;line-height:1.45;max-width:36em}
+.lede strong{font-weight:600}
+.byline{color:var(--muted);font-size:14px}
+section{display:grid;gap:14px}
+section > p{max-width:65ch}
+ol.steps{list-style:none;padding:0;margin:0;display:grid;gap:10px;counter-reset:s}
+ol.steps li{counter-increment:s;display:grid;grid-template-columns:28px 1fr;gap:12px;align-items:baseline}
+ol.steps li::before{content:counter(s);font:600 13px var(--mono);color:var(--accent)}
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:14.5px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap;vertical-align:top}
+tr:last-child th,tr:last-child td{border-bottom:0}
+thead th{font:600 11.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+td.change{white-space:normal;min-width:220px}
+td.num{text-align:right}
+.pill{display:inline-block;font:600 12px var(--mono);padding:2px 8px;border-radius:4px}
+.pill.pass{color:var(--pass);background:var(--pass-bg)} .pill.fail{color:var(--fail);background:var(--fail-bg)}
+.note{color:var(--muted);font-size:14px;max-width:65ch}
+.case{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:18px;display:grid;gap:14px;min-width:0}
+.case header{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline}
+.case .pr{font:600 14px var(--mono)}
+.case .crate{font-size:12.5px;color:var(--muted)}
+.case h3{flex:1 1 280px}
+.agent{display:grid;gap:8px;min-width:0}
+.agent-head{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline}
+.model{font-weight:600}
+.meta{font:12.5px var(--mono);color:var(--muted)}
+blockquote{margin:0;padding:8px 12px;border-left:3px solid var(--line);font-style:italic;color:var(--ink);overflow-wrap:anywhere}
+.agent p{font-size:15px;max-width:65ch}
+pre.cargo{margin:0;background:var(--term-bg);color:var(--term-fail);border-radius:6px;padding:12px 14px;font-size:12.5px;line-height:1.55;overflow-x:auto;white-space:pre}
+.findings{display:grid;gap:14px}
+.finding{display:grid;gap:6px;padding-left:14px;border-left:3px solid var(--accent)}
+.finding pre{margin:4px 0 0;background:var(--term-bg);color:var(--term-ink);border-radius:6px;padding:10px 12px;font-size:12.5px;overflow-x:auto}
+ul.limits{margin:0;padding-left:20px;display:grid;gap:6px;max-width:65ch}
+.repro pre{margin:0;background:var(--term-bg);color:var(--term-ink);border-radius:6px;padding:12px 14px;font-size:12.5px;overflow-x:auto}
+footer{color:var(--muted);font-size:14px}
+@media (max-width:480px){.wrap{padding-block:32px 56px;gap:44px}.lede{font-size:18px}}
+</style>
+<div class=wrap>
+<header class=top>
+  <p class=eyebrow>warpdotdev/warp &middot; oz agent run &middot; graded by cargo test</p>
+  <h1>Oz on Warp's own fixes</h1>
+  <p class=lede>I ran Oz on <strong>15 fixes merged into warp</strong>, once with Haiku 4.5 and once with Sonnet 5.5, and checked each result with the tests that shipped with Warp's real fix. Oz reported the fix as done in <strong>30 of 30 runs</strong>. In <strong>10</strong> of them, those tests failed.</p>
+  <p class=byline>Srikar Chittemsetty &middot; October 2026</p>
+</header>
+
+<section>
+  <h2>How each run works</h2>
+  <ol class=steps>
+    <li><span>Take a merged commit that changed both source and tests in one crate, and check out its parent. The bug is back; there is no git history to read.</span></li>
+    <li><span>Run <code>oz agent run</code> headless with the PR description as the prompt, plus: run <code>cargo test -p &lt;crate&gt;</code> when done and report the result.</span></li>
+    <li><span>When Oz stops, copy in the test files from the merged commit and run <code>cargo test -p &lt;crate&gt;</code>. Oz never saw these tests.</span></li>
+    <li><span>A run passes only if those tests pass. Every task was checked first: the tests fail on the parent commit and pass with Warp's own fix.</span></li>
+  </ol>
+</section>
+
+<section>
+  <h2>Results</h2>
+  <div class=table-wrap><table>
+    <thead><tr><th>Model in Oz</th><th>Passed</th><th>Said done</th><th>Said done, failed</th><th>Median time</th><th>Median tokens</th><th>Median tool calls</th></tr></thead>
+    <tbody><tr><th scope=row>Haiku 4.5</th><td>10 / 15</td><td>15 / 15</td><td>5</td><td>2m 23s</td><td>2.19M</td><td>21</td></tr><tr><th scope=row>Sonnet 5.5</th><td>10 / 15</td><td>15 / 15</td><td>5</td><td>48s</td><td>754k</td><td>9</td></tr></tbody>
+  </table></div>
+  <p class=note>Fifteen tasks and one run each, so a gap of a task or two between models is noise. Tokens are Warp's own count from <code>oz run get</code>.</p>
+</section>
+
+<section>
+  <h2>The 10 runs that said done and failed</h2>
+  <p>Each one was read by hand: the agent's final message, its test commands, its patch, and cargo's output for the hidden tests. Quotes are verbatim from the <code>--output-format ndjson</code> stream. In 4 of the 10, the agent's own passing <code>cargo test</code> is in the log; in the rest Oz ran the command in a background subagent, so only the agent's report of it is recorded.</p>
+  <article class=case id=warp-222903cb><header><a class=pr href="https://github.com/warpdotdev/warp/pull/14009">#14009</a><h3>fix(markdown): strip HTML comments instead of rendering them as text</h3><span class=crate>markdown_parser</span></header><div class=agent><div class=agent-head><span class=model>Sonnet 5.5</span><span class=meta>2 files changed</span><span class=meta>its own cargo run in the log: passing</span></div><blockquote><code>cargo test -p markdown_parser</code> passes: 144 passed, 0 failed.</blockquote><p>Stripped HTML comments, but a comment followed by text on the same line now lets that text become a heading. The hidden test expects it to stay literal.</p></div><pre class=cargo>test test_parse_html_comment_with_trailing_same_line_content_is_not_block ... FAILED
+test result: FAILED. 147 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s</pre></article><article class=case id=warp-086dade6><header><a class=pr href="https://github.com/warpdotdev/warp/pull/13747">#13747</a><h3>Fix bolded/italicized links breaking before trailing punctuation in Markdown renderer</h3><span class=crate>markdown_parser</span></header><div class=agent><div class=agent-head><span class=model>Sonnet 5.5</span><span class=meta>2 files changed</span><span class=meta>its own cargo run in the log: passing</span></div><blockquote><code>cargo test -p markdown_parser</code> finished with 140 passed and 0 failed.</blockquote><p>Widened the punctuation trimmed from the end of autolinks, which now also splits an escaped trailing period off the URL.</p></div><div class=agent><div class=agent-head><span class=model>Haiku 4.5</span><span class=meta>2 files changed</span><span class=meta>its own cargo run in the log: passing</span></div><blockquote>I successfully fixed the issue where bolded/italicized autolinks were breaking when the closing emphasis marker was immediately followed by other punctuation</blockquote><p>Made the same change and the same mistake.</p></div><pre class=cargo>test test_parse_autolink_preserves_escaped_trailing_punctuation ... FAILED
+test result: FAILED. 140 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s</pre></article><article class=case id=warp-a9a31226><header><a class=pr href="https://github.com/warpdotdev/warp/pull/14222">#14222</a><h3>fix(tui): better wrapping for shell command tool call for TUI</h3><span class=crate>warpui_core --features tui</span></header><div class=agent><div class=agent-head><span class=model>Haiku 4.5</span><span class=meta>changed nothing</span><span class=meta>its own cargo run in the log: passing</span></div><blockquote>The fix is correctly implemented in the code</blockquote><p>Read the existing code, concluded the fix was already there, and changed nothing.</p></div><div class=agent><div class=agent-head><span class=model>Sonnet 5.5</span><span class=meta>1 file changed</span><span class=meta>test output not in the log (backgrounded)</span></div><blockquote><code>cargo test -p warpui_core --features tui</code> passed: 521 unit tests passed, 0 failed, 7 ignored.</blockquote><p>Let the header wrap instead of truncating, so the chevron moves to the second row. The tests require it to stay on the first.</p></div><pre class=cargo>test narrow_header_keeps_chevron_on_first_row_while_label_wraps ... FAILED
+test narrow_header_keeps_chevron_on_first_row_when_expanded ... FAILED
+test very_narrow_header_keeps_chevron_visible_without_a_truncated_spacer ... FAILED
+test result: FAILED. 521 passed; 3 failed; 7 ignored; 0 measured; 0 filtered out; finished in 1.02s</pre></article><article class=case id=warp-d1b26eef><header><a class=pr href="https://github.com/warpdotdev/warp/pull/13596">#13596</a><h3>[TUI] Keep transcript selection active while dragging past viewport edges</h3><span class=crate>warpui_core --features tui</span></header><div class=agent><div class=agent-head><span class=model>Haiku 4.5</span><span class=meta>changed nothing</span><span class=meta>test output not in the log (backgrounded)</span></div><blockquote>The PR&#x27;s changes to enable event-driven vertical scrolling while selecting text in the TUI transcript are working correctly.</blockquote><p>Changed nothing, ran the existing tests, and reported that the PR&#x27;s changes were working.</p></div><pre class=cargo>test repaint_after_mouse_up_preserves_selection_on_glyph_change ... FAILED
+test drag_past_edge_preserves_selection_when_scroll_changes_a_visible_glyph ... FAILED
+test selectable_viewport_scrolls_up_from_top_terminal_row ... FAILED
+test result: FAILED. 467 passed; 3 failed; 7 ignored; 0 measured; 0 filtered out; finished in 1.02s</pre></article><article class=case id=warp-831327c6><header><a class=pr href="https://github.com/warpdotdev/warp/pull/13065">#13065</a><h3>Fix markdown link clicks in AI block output doing nothing</h3><span class=crate>warpui_core</span></header><div class=agent><div class=agent-head><span class=model>Haiku 4.5</span><span class=meta>1 file changed</span><span class=meta>test output not in the log (backgrounded)</span></div><blockquote>All 289 tests pass. The fix is working correctly.</blockquote><p>Edited the mouse-down handling. The hidden test checks that a mouse-up over a link is reported as handled.</p></div><div class=agent><div class=agent-head><span class=model>Sonnet 5.5</span><span class=meta>2 files changed</span><span class=meta>test output not in the log (backgrounded)</span></div><blockquote><code>cargo test -p warpui_core</code> passed: 290 passed, 0 failed, 7 ignored, plus the doc-tests.</blockquote><p>Made a single mouse-down on a link return handled. The test needs the mouse-up handled, so it still fails.</p></div><pre class=cargo>test single_click_on_link_is_handled_so_selection_is_not_started ... FAILED
+test result: FAILED. 289 passed; 1 failed; 7 ignored; 0 measured; 0 filtered out; finished in 1.01s</pre></article><article class=case id=warp-654940ed><header><a class=pr href="https://github.com/warpdotdev/warp/pull/11767">#11767</a><h3>Fix WeakModelHandle::upgrade creating zombie handles after last strong handle dropped</h3><span class=crate>warpui_core</span></header><div class=agent><div class=agent-head><span class=model>Haiku 4.5</span><span class=meta>3 files changed</span><span class=meta>test output not in the log (backgrounded)</span></div><blockquote>All 276 tests passed (plus 7 ignored), and 2 doc tests passed. The fix is complete and working correctly.</blockquote><p>Fixed the stale-handle bug for weak model handles and left the same bug in weak view handles, which the hidden test covers.</p></div><div class=agent><div class=agent-head><span class=model>Sonnet 5.5</span><span class=meta>3 files changed</span><span class=meta>test output not in the log (backgrounded)</span></div><blockquote><code>cargo test -p warpui_core</code> passes: 276 passed, 0 failed, 7 ignored.</blockquote><p>Made the same model-only fix.</p></div><pre class=cargo>test test_weak_view_handle_fails_after_last_strong_handle_dropped_in_event_callback ... FAILED
+test result: FAILED. 276 passed; 1 failed; 7 ignored; 0 measured; 0 filtered out; finished in 1.02s</pre></article>
+</section>
+
+<section><h2>Would a reviewing LLM have caught them?</h2><p>WarpBench scores runs with an LLM judge, so I ran one on the same 30 runs: <code>claude-opus-5-5</code> through Claude Code, blind. It saw only what a reviewer sees (the task prompt, the agent's diff and its final message), with every tool disabled, so it could not see the hidden tests or any result. This is my judge and rubric, not Factories' Correctness Scorer.</p><div class=table-wrap><table><thead><tr><th></th><th>Tests passed</th><th>Tests failed</th></tr></thead><tbody><tr><th scope=row>Judge said pass</th><td>19</td><td><span class='pill fail'>5</span></td></tr><tr><th scope=row>Judge said fail</th><td>1</td><td>5</td></tr></tbody></table></div><p>Of the 10 runs that failed the tests, the judge passed 5 with confidence between 0.62 and 0.80. It flagged 5, and only 3 of those for the reason the tests caught (two were empty diffs). The one passing run it flagged had a real problem the tests missed: a stray 1,972-line backup copy of markdown_parser.rs (a leftover from sed -i) committed in the diff.</p><p class=note>So the tests and the judge catch different things. Neither one alone is the gate.</p></section>
+
+<section>
+  <h2>Two things I noticed about Oz</h2>
+  <div class=findings>
+    <div class=finding><h3>Backgrounded output never reaches the stream</h3>
+      <p>When a command runs long, the tool result comes back with <code>status: running</code> and no output, and a subagent watches it. The output it sees never appears in the ndjson stream. The agent's last test command was backgrounded this way in 19 of 30 runs, which means a script driving Oz can read what the agent said about its tests but not what the tests printed.</p></div>
+    <div class=finding><h3>One rejected edit ends the whole run</h3>
+      <p>Twice, an edit from Haiku failed Warp's validation for an empty diff list. The run ended with a non-retryable <code>agent_stream_failure</code> before the agent had changed anything, rather than returning an error the model could recover from:</p>
+      <pre>Response stream finished unexpectedly with internal error: Key: &#x27;EditFilesToolCall.diffs&#x27; Error:Field validation for &#x27;diffs&#x27; failed on the &#x27;gt&#x27; tag</pre>
+      <p class=note>Both runs were rerun once and finished normally. The originals are kept, and they are not counted above.</p></div>
+  </div>
+</section>
+
+<section>
+  <h2>All 15 tasks</h2>
+  <div class=table-wrap><table>
+    <thead><tr><th>PR</th><th>Change</th><th>Crate</th><th>Lines</th><th>Oz co-author</th><th>Haiku 4.5</th><th>Sonnet 5.5</th></tr></thead>
+    <tbody><tr><td><a href="https://github.com/warpdotdev/warp/pull/11767">#11767</a></td><td class=change>Fix WeakModelHandle::upgrade creating zombie handles after last strong handle dropped</td><td><code>warpui_core</code></td><td class=num>13</td><td>yes</td><td><span class="pill fail">fail</span></td><td><span class="pill fail">fail</span></td></tr><tr><td><a href="https://github.com/warpdotdev/warp/pull/11936">#11936</a></td><td class=change>Make StandardizedPath::strip_prefix component-aware</td><td><code>warp_util</code></td><td class=num>23</td><td>no</td><td><span class="pill pass">pass</span></td><td><span class="pill pass">pass</span></td></tr><tr><td><a href="https://github.com/warpdotdev/warp/pull/12642">#12642</a></td><td class=change>fix(warp_files): avoid reversed line range on first-line truncation</td><td><code>warp_files</code></td><td class=num>7</td><td>no</td><td><span class="pill pass">pass</span></td><td><span class="pill pass">pass</span></td></tr><tr><td><a href="https://github.com/warpdotdev/warp/pull/12644">#12644</a></td><td class=change>fix(markdown_parser): widen delimiter run counter to avoid u8 overflow</td><td><code>markdown_parser</code></td><td class=num>16</td><td>no</td><td><span class="pill pass">pass</span></td><td><span class="pill pass">pass</span></td></tr><tr><td><a href="https://github.com/warpdotdev/warp/pull/13065">#13065</a></td><td class=change>Fix markdown link clicks in AI block output doing nothing</td><td><code>warpui_core</code></td><td class=num>73</td><td>yes</td><td><span class="pill fail">fail</span></td><td><span class="pill fail">fail</span></td></tr><tr><td><a href="https://github.com/warpdotdev/warp/pull/13596">#13596</a></td><td class=change>[TUI] Keep transcript selection active while dragging past viewport edges</td><td><code>warpui_core</code></td><td class=num>69</td><td>yes</td><td><span class="pill fail">fail</span></td><td><span class="pill pass">pass</span></td></tr><tr><td><a href="https://github.com/warpdotdev/warp/pull/13651">#13651</a></td><td class=change>Fix TUI scroll position anchoring</td><td><code>warpui_core</code></td><td class=num>3</td><td>no</td><td><span class="pill pass">pass</span></td><td><span class="pill pass">pass</span></td></tr><tr><td><a href="https://github.com/warpdotdev/warp/pull/13747">#13747</a></td><td class=change>Fix bolded/italicized links breaking before trailing punctuation in Markdown renderer</td><td><code>markdown_parser</code></td><td class=num>37</td><td>no</td><td><span class="pill fail">fail</span></td><td><span class="pill fail">fail</span></td></tr><tr><td><a href="https://github.com/warpdotdev/warp/pull/13782">#13782</a></td><td class=change>fix(tui): enable Kitty keyboard protocol so Shift+Enter inserts a newline</td><td><code>warpui_core</code></td><td class=num>22</td><td>yes</td><td><span class="pill pass">pass</span></td><td><span class="pill pass">pass</span></td></tr><tr><td><a href="https://github.com/warpdotdev/warp/pull/14009">#14009</a></td><td class=change>fix(markdown): strip HTML comments instead of rendering them as text</td><td><code>markdown_parser</code></td><td class=num>49</td><td>no</td><td><span class="pill pass">pass</span></td><td><span class="pill fail">fail</span></td></tr><tr><td><a href="https://github.com/warpdotdev/warp/pull/14222">#14222</a></td><td class=change>fix(tui): better wrapping for shell command tool call for TUI</td><td><code>warpui_core</code></td><td class=num>164</td><td>yes</td><td><span class="pill fail">fail</span></td><td><span class="pill fail">fail</span></td></tr><tr><td><a href="https://github.com/warpdotdev/warp/pull/14432">#14432</a></td><td class=change>Fix terminal lag + related warnings when dragging an active session to a new window</td><td><code>warpui_core</code></td><td class=num>52</td><td>yes</td><td><span class="pill pass">pass</span></td><td><span class="pill pass">pass</span></td></tr><tr><td><a href="https://github.com/warpdotdev/warp/pull/14512">#14512</a></td><td class=change>Preserve numeric CSS font-weights when pasting rich text</td><td><code>markdown_parser</code></td><td class=num>58</td><td>no</td><td><span class="pill pass">pass</span></td><td><span class="pill pass">pass</span></td></tr><tr><td><a href="https://github.com/warpdotdev/warp/pull/15705">#15705</a></td><td class=change>Fix em_width panic when a glyph has no bounding box</td><td><code>warpui_core</code></td><td class=num>21</td><td>yes</td><td><span class="pill pass">pass</span></td><td><span class="pill pass">pass</span></td></tr><tr><td><a href="https://github.com/warpdotdev/warp/pull/15772">#15772</a></td><td class=change>Guard reversed glyph bounds in smart_select</td><td><code>warpui_core</code></td><td class=num>4</td><td>yes</td><td><span class="pill pass">pass</span></td><td><span class="pill pass">pass</span></td></tr></tbody>
+  </table></div>
+  <p class=note>Lines: source lines changed by the real fix. Oz co-author: the merged commit has a co-author trailer from Warp's agent. "No" does not mean hand-written; outside contributors may have used any tool. Tasks touching <code>warpui_core</code>'s TUI code run with <code>--features tui</code>, in the prompt and in the check, since <code>cargo test -p warpui_core</code> alone skips those tests.</p>
+</section>
+
+<section>
+  <h2>Limits</h2>
+  <ul class=limits>
+    <li>15 tasks, one run per task per model. A small sample.</li>
+    <li>Light crates only: markdown_parser, warp_util, warp_files, warpui_core.</li>
+    <li>The prompt is the full PR description, which often explains the fix. That makes the pass rate generous; a bare issue would likely score lower.</li>
+    <li>The repo is public, so a model may have seen some of these fixes in training.</li>
+    <li>"Said done" is a keyword check on the final message. I also read all 30 final messages: every one presents the fix as complete.</li>
+    <li>Run on macOS with the repo's pinned Rust 1.92.0, through <code>oz agent run --model claude-4-5-haiku</code> and <code>claude-5-5-sonnet-medium</code>, billed to my own Anthropic key.</li>
+  </ul>
+</section>
+
+<section class=repro>
+  <h2>Reproduce a case</h2>
+  <p>Every failing case reproduces without calling a model: export the parent commit, apply the agent's saved patch, add the fix's tests, run cargo. All 10 reproduced, and two passing runs used as controls still passed.</p>
+  <pre>git archive &lt;parent&gt; | tar -x -C ws
+cd ws &amp;&amp; git apply agent.patch
+git -C &lt;warp&gt; show &lt;fix&gt;:&lt;test file&gt; &gt; &lt;test file&gt;
+cargo test -p &lt;crate&gt;</pre>
+</section>
+
+<footer>Built with a small harness I wrote for running headless coding agents on a repo's own history. Raw logs for every run are available on request.</footer>
+</div>
