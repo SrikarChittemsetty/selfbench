@@ -1,0 +1,15 @@
+{
+  "configs": [
+    {
+      "name": "warp-default",
+      "kind": "warp",
+      "bin": "oz"
+    },
+    {
+      "name": "warp-model-a",
+      "kind": "warp",
+      "bin": "oz",
+      "model": "REPLACE_WITH_ID_FROM_oz_model_list"
+    }
+  ]
+}
